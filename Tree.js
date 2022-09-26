@@ -14,7 +14,7 @@ $(document).ready(function() {
 	// See: https://github.com/wikitree/wikitree-api/blob/main/authentication.md
 
 	// We want the API login process to return back where we started.
-	$('#returnURL').val( window.location.href );
+	$('#returnURL').val(window.location.href);
 
 	// We store userName and userId of the logged-in user locally in a cookie so we know on return that
 	// the user is signed in (and so we can use it as a default starting point for tree views).
@@ -28,38 +28,35 @@ $(document).ready(function() {
 
 	// If we've arrived with an "authcode", it's the redirect back from the API clientLogin(), and we should
 	// verify the code and then redirect back to ourselves to clear out the parameter.
-	var u = new URLSearchParams(window.location.search)
+	var u = new URLSearchParams(window.location.search);
 	var authcode = u.get('authcode');
 
-	if ((typeof(userName) != 'undefined') && (userName != null) && (userName != '')) {
+	if (typeof userName != 'undefined' && userName != null && userName != '') {
 		// According to our saved cookie, we have a user that is logged into the API.
 		// Update the login div with a status instead of the button.
-		$('#getAPILogin').html("Logged into API: "+userName);
-		
+		$('#getAPILogin').html('Logged into API: ' + userName);
+
 		// Display our tree. If we don't have one, use the wikitree-dynamic-tree as a default.
 		// If we have a cookie-saved starting personId, use that, otherwise start with the logged-in user's id.
-		if ((typeof(viewTreeId) == 'undefined') || !viewTreeId) {
+		if (typeof viewTreeId == 'undefined' || !viewTreeId) {
 			viewTreeId = 'wikitree-dynamic-tree';
 		}
-		if ((typeof(viewTreePersonId) == 'undefined') || !viewTreePersonId) {
+		if (typeof viewTreePersonId == 'undefined' || !viewTreePersonId) {
 			viewTreePersonId = userId;
 			viewTreePersonName = userName;
 		}
 
 		// Launch our desired tree
 		launchTree(viewTreeId, viewTreePersonId, viewTreePersonName);
-
-	}
-	else if ((typeof authcode != 'undefined') && (authcode != null) && (authcode != '')) {
+	} else if (typeof authcode != 'undefined' && authcode != null && authcode != '') {
 		// We have an auth code to confirm. Show our interim message div while we do.
 		// This is very brief; one the clientLogin() returns we redirect back to ourselves.
 		$('#confirmAuth').show();
-		WikiTreeAPI.postToAPI( { 'action':'clientLogin', 'authcode': authcode } )
-		.then(function(data) {
+		WikiTreeAPI.postToAPI({ action: 'clientLogin', authcode: authcode }).then(function(data) {
 			if (data.clientLogin.result == 'Success') {
-				WikiTreeAPI.cookie('WikiTreeAPI_userName', data.clientLogin.username, { 'path': '/'} );
-				WikiTreeAPI.cookie('WikiTreeAPI_userId', data.clientLogin.userid, { 'path': '/'} );
-				var urlPieces = [location.protocol, '//', location.host, location.pathname]
+				WikiTreeAPI.cookie('WikiTreeAPI_userName', data.clientLogin.username, { path: '/' });
+				WikiTreeAPI.cookie('WikiTreeAPI_userId', data.clientLogin.userid, { path: '/' });
+				var urlPieces = [ location.protocol, '//', location.host, location.pathname ];
 				var url = urlPieces.join('');
 				window.location = url;
 			} else {
@@ -68,11 +65,9 @@ $(document).ready(function() {
 				$('#confirmAuth').hide();
 			}
 		});
-	}
-	else if (viewTreePersonId && viewTreePersonName && viewTreeId) {
+	} else if (viewTreePersonId && viewTreePersonName && viewTreeId) {
 		launchTree(viewTreeId, viewTreePersonId, viewTreePersonName);
-	}
-	else {
+	} else {
 		// No tree to launch!
 	}
 });
@@ -94,7 +89,7 @@ function launchTree(viewTreeId, viewTreePersonId, viewTreePersonName) {
 
 	// Define the Person profile fields to retrieve, which we can use to fill the treeInfo selection
 	// and some elements in the page.
-	var infoFields = "Id,Name,FirstName,LastName,Derived.BirthName,Derived.BirthNamePrivate";
+	var infoFields = 'Id,Name,FirstName,LastName,Derived.BirthName,Derived.BirthNamePrivate';
 
 	if (viewTreeId == 'wikitree-dynamic-tree') {
 		$('#treeInfo').html(`
@@ -106,12 +101,10 @@ function launchTree(viewTreeId, viewTreePersonId, viewTreePersonName) {
 			<a href="https://www.WikiTree.com/wiki/Dynamic_Tree" target="_Help"><img src="https://www.WikiTree.com/images/icons/help.gif" border="0" width="11" height="11" alt="Help" title="Help using the dynamic tree"></a></span><br /><br />
 		`);
 
-		WikiTreeAPI.postToAPI( {'action': 'getPerson', 'key': viewTreePersonId, 'fields': infoFields } )
-		.then(function(data) {
+		WikiTreeAPI.postToAPI({ action: 'getPerson', key: viewTreePersonId, fields: infoFields }).then(function(data) {
 			updateViewedPersonContent(data[0].person);
 			var tree = new WikiTreeDynamicTreeViewer('#treeViewerContainer', viewTreePersonId);
 		});
-
 	}
 	if (viewTreeId == 'alternate-view') {
 		$('#treeInfo').html(`
@@ -123,17 +116,22 @@ function launchTree(viewTreeId, viewTreePersonId, viewTreePersonName) {
 			<a href="https://www.WikiTree.com/wiki/Dynamic_Tree" target="_Help"><img src="https://www.WikiTree.com/images/icons/help.gif" border="0" width="11" height="11" alt="Help" title="Help using the dynamic tree"></a></span><br /><br />
 		`);
 
-		WikiTreeAPI.postToAPI( {'action': 'getPerson', 'key': viewTreePersonId, 'fields': infoFields } )
-		.then(function(data) {
+		WikiTreeAPI.postToAPI({ action: 'getPerson', key: viewTreePersonId, fields: infoFields }).then(function(data) {
 			updateViewedPersonContent(data[0].person);
 			var tree = new alternateViewExample('#treeViewerContainer', viewTreePersonId);
 		});
-
 	}
 
+	if (viewTreeId == 'brickwalls') {
+		$('#treeInfo').html(`<h2>Brick Wall Ancestors for <span class="viewTreePersonBirthName"></span></h2>`);
 
+		WikiTreeAPI.postToAPI({ action: 'getPerson', key: viewTreePersonId }).then((data) => {
+			updateViewedPersonContent(data[0].person);
+			var tree = new BrickWalls('#treeViewerContainer', viewTreePersonId);
 
-	else if (viewTreeId == 'dummy') {
+			tree.processAncestors();
+		});
+	} else if (viewTreeId == 'dummy') {
 		$('#treeInfo').html(`
 			<h2>Dummy/Placeholder View</h2>
 
@@ -149,29 +147,26 @@ function launchTree(viewTreeId, viewTreePersonId, viewTreePersonName) {
 			<div id="treeViewerContainerInner"></div>
 		`);
 
-		WikiTreeAPI.postToAPI( {'action': 'getPerson', 'key': viewTreePersonId, 'fields': infoFields} )
-		.then(function(data) {
+		WikiTreeAPI.postToAPI({ action: 'getPerson', key: viewTreePersonId, fields: infoFields }).then(function(data) {
 			updateViewedPersonContent(data[0].person);
-			$('#treeViewerContainerInner').html("<xmp>"+JSON.stringify(data,null,3)+"</xmp>");
+			$('#treeViewerContainerInner').html('<xmp>' + JSON.stringify(data, null, 3) + '</xmp>');
 		});
-
 	}
-
 }
-
 
 /* 
  * When a new tree or starting profile is desired, we lookup the profile with the API. If one is found, we start a new tree.
  */
 function newTree(k) {
 	var key;
-	if (k) { $('#viewTreePersonName').val(k); }
+	if (k) {
+		$('#viewTreePersonName').val(k);
+	}
 	var key = $('#viewTreePersonName').val();
 
-	WikiTreeAPI.postToAPI( {'action':'getPerson', 'key':key } )
-	.then(function(data) {
+	WikiTreeAPI.postToAPI({ action: 'getPerson', key: key }).then(function(data) {
 		if (data.error) {
-			alert("Error retrieiving \""+key+"\" from API.");
+			alert('Error retrieiving "' + key + '" from API.');
 		} else {
 			if (data[0].person.Id) {
 				$('#treeViewerContainer').empty();
@@ -182,13 +177,11 @@ function newTree(k) {
 				launchTree(viewTreeId, viewTreePersonId, viewTreePersonName);
 				updateViewedPersonContent(data[0].person);
 			} else {
-				alert("Error retrieiving \""+key+"\" from API.");
+				alert('Error retrieiving "' + key + '" from API.');
 			}
 		}
 	});
-};
-
-
+}
 
 /*
  * Create navigation bar with the number ID of a profile, and update spans/links to have the person data.
@@ -199,5 +192,5 @@ function updateViewedPersonContent(person) {
 	$('.viewTreePersonName').html(person.Name);
 	$('.viewTreePersonBirthName').html(person.BirthName ? person.BirthName : person.BirthNamePrivate);
 	$('.viewTreePersonURL').html(person.Name);
-	$('.viewTreePersonURL').attr("href", "https://www.WikiTree.com/wiki/"+person.Name);
+	$('.viewTreePersonURL').attr('href', 'https://www.WikiTree.com/wiki/' + person.Name);
 }
